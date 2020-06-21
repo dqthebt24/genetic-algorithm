@@ -28,7 +28,7 @@ BOUND_LOW, BOUND_UP = 64.516, 22580.6  # boundaries for all dimensions
 
 # Genetic Algorithm constants:
 POPULATION_SIZE = 60
-P_CROSSOVER = 0.9  # probability for crossover (0.9,0.1), (0.3, 0.3)
+P_CROSSOVER = 0.5  # probability for crossover (0.9,0.1), (0.3, 0.3)
 P_MUTATION = 0.1   # (try also 0.5) probability for mutating an individual
 MAX_GENERATIONS = 200
 HALL_OF_FAME_SIZE = 10
@@ -113,7 +113,7 @@ def getToolbox():
 		indpb=1.0/DIMENSIONS)
 	return toolbox
 
-def gaSolution():
+def gaHallSolution():
 	# random.seed(datetime.now())
 
 	lPopulation = copy.deepcopy(POPULATION)
@@ -154,12 +154,54 @@ def agaSolution():
 
 	return best, minFitnessValues, meanFitnessValues
 
-def main():
-	random.seed(datetime.now())
-	init()
+def agaSolutionWithoutHall():
+	# random.seed(datetime.now())
 
-	agaBest, agaMins, agaMeans = agaSolution()
-	best, gaMins, gaMeans = gaSolution()
+	lPopulation = copy.deepcopy(POPULATION)
+
+	# Get a toolbox
+	toolbox = getToolbox()
+	stats = getStats()
+	hof = tools.HallOfFame(HALL_OF_FAME_SIZE)
+
+	# Run AGA algorithm
+	k1 = 1
+	k2 = 0.5
+	k3 = 1
+	k4 = 0.5
+	populationLocal, logbook = elitism.eaAdaptiveWithoutHall(lPopulation, toolbox, 
+		ngen=MAX_GENERATIONS, k1=k1, k2=k2, k3=k3, k4=k4, stats=stats, verbose=True)
+
+	minFitnessValues, meanFitnessValues = logbook.select("min", "avg")
+	best = tools.selBest(lPopulation, 1)[0]
+
+	return best, minFitnessValues, meanFitnessValues
+
+def gaNormalSolution():
+	lPopulation = copy.deepcopy(POPULATION)
+
+	# Get a toolbox
+	toolbox = getToolbox()
+	stats = getStats()
+	hof = tools.HallOfFame(HALL_OF_FAME_SIZE)
+
+	# Run AGA algorithm
+	k1 = 1
+	k2 = 0.5
+	k3 = 1
+	k4 = 0.5
+	populationLocal, logbook = elitism.eaSimpleWithoutHall(lPopulation, toolbox, cxpb=P_CROSSOVER, mutpb=P_MUTATION, 
+		ngen=MAX_GENERATIONS, stats=stats, verbose=True)
+
+	minFitnessValues, meanFitnessValues = logbook.select("min", "avg")
+	best = tools.selBest(lPopulation, 1)[0]
+
+	return best, minFitnessValues, meanFitnessValues
+
+def cmpAgaVsGa():
+	# agaBest, agaMins, agaMeans = agaSolution()
+	agaBest, agaMins, agaMeans = agaSolutionWithoutHall()
+	best, gaMins, gaMeans = gaNormalSolution()
 
 	print("-- Best Individual = ", best)
 	print("-- Best Fitness = ", best.fitness.values[0])
@@ -173,8 +215,35 @@ def main():
 	plt.plot(agaMins, color='blue')
 	plt.xlabel('Generation')
 	plt.ylabel('F({X})')
-	plt.gca().legend(('GA Mins','AGA Mins'))
+	plt.gca().legend(('GA Mins', 'AGA Mins'))
 	plt.show()
+
+def cmpAgaVsGaHall():
+	# agaBest, agaMins, agaMeans = agaSolution()
+	agaBest, agaMins, agaMeans = agaSolutionWithoutHall()
+	best, gaMins, gaMeans = gaHallSolution()
+
+	print("-- Best Individual = ", best)
+	print("-- Best Fitness = ", best.fitness.values[0])
+
+	print("-- AGA Best Individual = ", agaBest)
+	print("-- AGA Best Fitness = ", agaBest.fitness.values[0])
+
+	# plot statistics
+	sns.set_style("whitegrid")
+	plt.plot(gaMins, color='red')
+	plt.plot(agaMins, color='blue')
+	plt.xlabel('Generation')
+	plt.ylabel('F({X})')
+	plt.gca().legend(('GA Mins', 'AGA Mins'))
+	plt.show()
+
+def main():
+	random.seed(datetime.now())
+	init()
+
+	cmpAgaVsGa()
+	# cmpAgaVsGaHall()
 
 if __name__ == "__main__":
 	main()

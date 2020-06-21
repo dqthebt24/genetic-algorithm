@@ -178,7 +178,7 @@ def eaAdaptiveWithElitism(population, toolbox, ngen, k1, k2, k3, k4, stats=None,
 		# Append the current generation statistics to the logbook
 		record = stats.compile(population) if stats else {}
 		print("Records: {0}".format(record))
-		
+		fMin, fAvg = getMinAvg(record)
 		print("Min: {}; Avg{}".format(fMin, fAvg))
 		logbook.record(gen=gen, nevals=len(invalid_ind), **record)
 		if verbose:
